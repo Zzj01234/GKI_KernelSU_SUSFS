@@ -650,7 +650,7 @@ jobs:
         if: (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'SukiSU(40726)' || inputs.ksu_variant == 'SukiSU(40548)') && inputs.ksu_mode != '禁用KSU'
         working-directory: ${{ env.KERNEL_ROOT }}/KernelSU
         run: |
-          KBUILD_FILE="./kernel/Kbuild"
+          KBUILD_FILE=$(for c in ./kernel/Kbuild ./Kbuild ./kernel/Makefile; do [ -f "$c" ] && echo "$c" && break; done)
           CUSTOM_TAG="${{ vars.MANAGER_STR }}"
 
           if [ ! -f "$KBUILD_FILE" ]; then
@@ -703,7 +703,7 @@ jobs:
         if: inputs.ksu_variant == 'SukiSU' && inputs.ksu_mode != '禁用KSU'
         working-directory: ${{ env.KERNEL_ROOT }}/KernelSU
         run: |
-          KBUILD_FILE="./kernel/Kbuild"
+          KBUILD_FILE=$(for c in ./kernel/Kbuild ./Kbuild ./kernel/Makefile; do [ -f "$c" ] && echo "$c" && break; done)
           if [ ! -f "$KBUILD_FILE" ]; then
             echo "未找到 $KBUILD_FILE，跳过版本号对齐"
             exit 0
