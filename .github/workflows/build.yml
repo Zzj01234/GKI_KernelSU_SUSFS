@@ -708,7 +708,7 @@ jobs:
             echo "未找到 $KBUILD_FILE，跳过版本号对齐"
             exit 0
           fi
-          sed -i -E 's|^KSU_VERSION[[:space:]]*:=.*$|KSU_VERSION := 40922|' "$KBUILD_FILE"
+          sed -i -E 's|^KSU_VERSION[[:space:]]*:=.*$|KSU_VERSION := 40900|' "$KBUILD_FILE"
           echo "--- 版本号核对 ---"
           grep -n -E '^(VERSION_BASE|VERSION_OFFSET|KSU_VERSION[[:space:]]*:=)' "$KBUILD_FILE" || true
 
