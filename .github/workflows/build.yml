@@ -562,7 +562,7 @@ jobs:
               if [ "${{ inputs.enable_susfs }}" = "false" ]; then
                 BRANCH="-s main"
               else
-                BRANCH="-s builtin"
+                BRANCH="-s main"
               fi
               ;;
             "Next")
@@ -699,7 +699,7 @@ jobs:
 
           echo "已更新 get_ksu_version_full 模板: $VERSION_TEMPLATE"
 
-      - name: 固定 SukiSU 版本号（对齐管理器 40922）
+      - name: 固定 SukiSU 版本号（对齐管理器 40968）
         if: inputs.ksu_variant == 'SukiSU' && inputs.ksu_mode != '禁用KSU'
         working-directory: ${{ env.KERNEL_ROOT }}/KernelSU
         run: |
@@ -708,7 +708,7 @@ jobs:
             echo "未找到 $KBUILD_FILE，跳过版本号对齐"
             exit 0
           fi
-          sed -i -E 's|^KSU_VERSION[[:space:]]*:=.*$|KSU_VERSION := 40900|' "$KBUILD_FILE"
+          sed -i -E 's|^KSU_VERSION[[:space:]]*:=.*$|KSU_VERSION := 40968|' "$KBUILD_FILE"
           echo "--- 版本号核对 ---"
           grep -n -E '^(VERSION_BASE|VERSION_OFFSET|KSU_VERSION[[:space:]]*:=)' "$KBUILD_FILE" || true
 
