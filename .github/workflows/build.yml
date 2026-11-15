@@ -540,13 +540,13 @@ jobs:
 
           case "$variant_input" in
             "Official"|"BakaSU")
-              BRANCH="-s main"
+              BRANCH="main"
               ;;
             "SukiSU")
               if [ "${{ inputs.enable_susfs }}" = "false" ]; then
-                BRANCH="-s main"
+                BRANCH="main"
               else
-                BRANCH="-s builtin"
+                BRANCH="builtin"
               fi
               ;;
             "Next")
@@ -562,7 +562,7 @@ jobs:
                 echo "未在 $LEGACY_SUKISU_CONFIG 配置 SukiSU 固定提交" >&2
                 exit 1
               fi
-              BRANCH="-s $SUKISU_FIXED_COMMIT"
+              BRANCH="$SUKISU_FIXED_COMMIT"
               ;;
           esac
 
@@ -573,7 +573,7 @@ jobs:
             if [ "$CUSTOM_ENABLED" == "true" ] && [ "$variant_input" == "SukiSU" ]; then
               SUKISU_COMMIT=$(grep "^sukisu=" "$CONFIG_FILE" | cut -d'=' -f2)
               if [ -n "$SUKISU_COMMIT" ]; then
-                BRANCH="-s $SUKISU_COMMIT"
+                BRANCH="$SUKISU_COMMIT"
                 echo "SukiSU 使用自定义提交: $SUKISU_COMMIT"
               fi
             fi
@@ -607,7 +607,7 @@ jobs:
               ;;
             "SukiSU")
               echo "添加 ${{ inputs.ksu_variant }}..."
-              curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/SukiSU-Nova/SukiSU-Nova/main/kernel/setup.sh" | bash $BRANCH
               ;;
             "BakaSU")
               echo "添加 BakaSU..."
@@ -619,7 +619,7 @@ jobs:
                 exit 1
               fi
               echo "添加 ${{ inputs.ksu_variant }}..."
-              curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/SukiSU-Nova/SukiSU-Nova/main/kernel/setup.sh" | bash $BRANCH
               ;;
           esac
 
@@ -630,7 +630,7 @@ jobs:
             echo "KSU_LATEST_COMMIT_DATE=未知" >> $GITHUB_ENV
           fi
 
-      - name: 对齐 SukiSU 版本号（管理器 v4.3.0-r2 / 41185）
+      - name: 对齐 SukiSU 版本号（SukiSU Nova v3.0.0 / 30000）
         if: inputs.ksu_variant == 'SukiSU' && inputs.ksu_mode != '禁用KSU'
         working-directory: ${{ env.KERNEL_ROOT }}/KernelSU
         run: |
@@ -646,20 +646,20 @@ jobs:
             exit 1
           fi
 
-          # 管理器 v4.3.0-r2 的 versionCode 为 41185，内核 KSU_VERSION 必须一致。
+          # SukiSU Nova v3.0.0 的 versionCode 为 30000，内核 KSU_VERSION 必须一致。
           if ! grep -qE '^KSU_VERSION[[:space:]]*:=' "$KBUILD_FILE"; then
             echo "::error::$KBUILD_FILE 中未找到 KSU_VERSION 定义"
             exit 1
           fi
-          sed -i -E 's|^KSU_VERSION[[:space:]]*:=.*$|KSU_VERSION := 41185|' "$KBUILD_FILE"
+          sed -i -E 's|^KSU_VERSION[[:space:]]*:=.*$|KSU_VERSION := 30000|' "$KBUILD_FILE"
 
           # 新版 Kbuild/Makefile 通过 VERSION_TAG 生成完整版本串；
           # 旧版则使用 get_ksu_version_full 模板，两种结构都要兼容。
           GIT_HASH=$(git rev-parse --short=8 HEAD)
           if grep -qE '^VERSION_TAG[[:space:]]*:=' "$KBUILD_FILE"; then
-            sed -i -E 's|^VERSION_TAG[[:space:]]*:=.*$|VERSION_TAG := 4.3.0-r2|' "$KBUILD_FILE"
+            sed -i -E 's|^VERSION_TAG[[:space:]]*:=.*$|VERSION_TAG := 3.0.0|' "$KBUILD_FILE"
           elif grep -qE '^[[:space:]]*define[[:space:]]+get_ksu_version_full' "$KBUILD_FILE"; then
-            VERSION_TEMPLATE="v4.3.0-r2-$GIT_HASH@main"
+            VERSION_TEMPLATE="v3.0.0-$GIT_HASH@main"
             awk -v body="$VERSION_TEMPLATE" '
               BEGIN {
                 in_block = 0
@@ -691,8 +691,12 @@ jobs:
             exit 1
           fi
 
-          # builtin 分支固定提交会被 checkout 成 detached HEAD；显式指定分支名，保证版本串显示 @builtin。
-          echo "KSU_BUILD_REF=builtin" >> "$GITHUB_ENV"
+          # 固定提交会被 checkout 成 detached HEAD；显式指定分支名，避免版本串显示错误的 ref。
+          BUILD_REF="${BRANCH:-main}"
+          if [ "$BUILD_REF" != "main" ] && [ "$BUILD_REF" != "builtin" ]; then
+            BUILD_REF="main"
+          fi
+          echo "KSU_BUILD_REF=$BUILD_REF" >> "$GITHUB_ENV"
           echo "--- 版本号核对 ---"
           grep -nE '^(VERSION_BASE|VERSION_OFFSET|KSU_VERSION|VERSION_TAG)' "$KBUILD_FILE" || true
 

@@ -68,7 +68,7 @@ jobs:
             git clone https://github.com/KernelSU-Next/KernelSU-Next.git KernelSU
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "This is the SukiSU variant"
-            git clone https://github.com/SukiSU-Ultra/SukiSU-Ultra.git KernelSU
+            git clone https://github.com/SukiSU-Nova/SukiSU-Nova.git KernelSU
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU(40726)" ]; then
             echo "This is the SukiSU(40726) variant"
             git clone https://github.com/SukiSU-Ultra/SukiSU-Ultra.git KernelSU
@@ -93,7 +93,7 @@ jobs:
           KSU_GIT_VERSION=$(git rev-list --count HEAD)
 
           if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-            KSU_VERSION=$((40000 + KSU_GIT_VERSION - 2815))
+            KSU_VERSION=$((30000 + KSU_GIT_VERSION - 4001))
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU(40726)" ]; then
             KSU_VERSION=40726
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU(40548)" ]; then
@@ -144,14 +144,38 @@ jobs:
             exit 0
           fi
 
+          # SukiSU Nova：正式版 v3.0.0 管理器的 versionCode 为 30000，与内核对齐。
+          # 改名后的 Manager CI 尚未产出 30000 artifact，优先直接下载官方 release APK，
+          # 避免回退到改名前的旧包名（com.sukisu.ultra / 41184）产物。
+          if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ] && [ "${KSU_VERSION:-}" == "30000" ]; then
+            echo "下载 SukiSU Nova 官方 v3.0.0 / 30000 管理器..."
+            NOVA_TAG=$(curl -fsSL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/SukiSU-Nova/SukiSU-Nova/releases/latest" |
+              jq -r '.tag_name // empty')
+            if [ -z "$NOVA_TAG" ]; then
+              NOVA_TAG="v3.0.0"
+            fi
+            NOVA_URL=$(curl -fsSL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/SukiSU-Nova/SukiSU-Nova/releases/tags/$NOVA_TAG" |
+              jq -r '.assets[] | select(.name | endswith("-release.apk")) | .browser_download_url' |
+              head -n 1)
+            if [ -n "$NOVA_URL" ]; then
+              mkdir -p "manager-artifacts/SukiSU-Nova"
+              curl -fL -o "manager-artifacts/SukiSU-Nova/SukiSU_Nova_${NOVA_TAG}-release.apk" "$NOVA_URL"
+              echo "已下载 Nova 管理器: $NOVA_URL"
+              exit 0
+            fi
+            echo "警告：未找到 Nova 官方 release APK，回退到 Actions artifact。"
+          fi
+
           if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             echo "KernelSU Next..."
             REPO="KernelSU-Next/KernelSU-Next"
             KSUM="manager"
             BRANCH="dev"
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-            echo "SukiSU..."
-            REPO="SukiSU-Ultra/SukiSU-Ultra"
+            echo "SukiSU Nova..."
+            REPO="SukiSU-Nova/SukiSU-Nova"
             KSUM="manager"
           elif [ "${{ inputs.kernelsu_variant }}" == "BakaSU" ]; then
             echo "BakaSU..."
@@ -185,7 +209,7 @@ jobs:
             local git_version
             git_version=$(git -C KernelSU rev-list --count "$head_sha")
             case "${{ inputs.kernelsu_variant }}" in
-              "SukiSU") echo $((40000 + git_version - 2815)) ;;
+              "SukiSU") echo $((30000 + git_version - 4001)) ;;
               "BakaSU") echo $((30700 + git_version)) ;;
               "Official") echo $((20000 + git_version)) ;;
               "Next") echo $((30000 + git_version)) ;;

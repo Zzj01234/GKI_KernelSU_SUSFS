@@ -26,5 +26,6 @@ gki-android16-6.12=
 
 # ==================== SukiSU 的 commit hash ====================
 # 仅当 custom=true 且使用 SukiSU 变体时生效
-# builtin 分支：带 SUSFS/KPM 的 Kconfig，上游构建 SUSFS 时使用
-sukisu=f9aa2fec23c3f4a06a935f69dc04cb85b261e7f3
+# 留空：由工作流按 enable_susfs 选择分支；关闭 SUSFS 时走 Nova main 最新 tag（v3.0.0）
+# 注意：4bec532d 是 Nova builtin 分支的头，不是 main，填它会走 builtin
+sukisu=
