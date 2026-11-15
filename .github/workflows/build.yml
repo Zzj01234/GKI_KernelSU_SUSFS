@@ -691,8 +691,8 @@ jobs:
             exit 1
           fi
 
-          # 固定提交会被 checkout 成 detached HEAD；显式指定分支名，保证版本串显示 @main。
-          echo "KSU_BUILD_REF=main" >> "$GITHUB_ENV"
+          # builtin 分支固定提交会被 checkout 成 detached HEAD；显式指定分支名，保证版本串显示 @builtin。
+          echo "KSU_BUILD_REF=builtin" >> "$GITHUB_ENV"
           echo "--- 版本号核对 ---"
           grep -nE '^(VERSION_BASE|VERSION_OFFSET|KSU_VERSION|VERSION_TAG)' "$KBUILD_FILE" || true
 

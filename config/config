@@ -18,7 +18,7 @@ custom=true
 # ==================== SUSFS 各分支的 commit hash ====================
 # 仅当 custom=true 时生效
 gki-android12-5.10=
-# K60 Pro：上游 2026-11-06 成功构建所用提交，配合 SukiSU main 的 exec hook 清理
+# K60 Pro：上游 2026-11-06 成功构建所用提交
 gki-android13-5.15=d5df1d937361530787fafa920dea3a9b6dc8ebef
 gki-android14-6.1=
 gki-android15-6.6=
@@ -26,5 +26,5 @@ gki-android16-6.12=
 
 # ==================== SukiSU 的 commit hash ====================
 # 仅当 custom=true 且使用 SukiSU 变体时生效
-# 46a94270 = 设备上 SukiSU PR 管理器/ksud 的构建提交（4.3.0-r2-35-g46a94270）
-sukisu=46a942701b6120f67265e182a101e9f8b72e0582
+# builtin 分支：带 SUSFS/KPM 的 Kconfig，上游构建 SUSFS 时使用
+sukisu=f9aa2fec23c3f4a06a935f69dc04cb85b261e7f3
