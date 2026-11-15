@@ -589,7 +589,7 @@ jobs:
           case "${{ inputs.ksu_variant }}" in
             "Official")
               echo "添加 KernelSU 官方版..."
-              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s $BRANCH
 
               cd KernelSU
               KSU_GIT_VERSION=$(git rev-list --count HEAD)
@@ -607,11 +607,11 @@ jobs:
               ;;
             "SukiSU")
               echo "添加 ${{ inputs.ksu_variant }}..."
-              curl -LSs "https://raw.githubusercontent.com/SukiSU-Nova/SukiSU-Nova/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/SukiSU-Nova/SukiSU-Nova/main/kernel/setup.sh" | bash -s $BRANCH
               ;;
             "BakaSU")
               echo "添加 BakaSU..."
-              curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" | bash -s $BRANCH
               ;;
             *)
               if [ -z "$LEGACY_SUKISU_CONFIG" ]; then
@@ -619,7 +619,7 @@ jobs:
                 exit 1
               fi
               echo "添加 ${{ inputs.ksu_variant }}..."
-              curl -LSs "https://raw.githubusercontent.com/SukiSU-Nova/SukiSU-Nova/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/SukiSU-Nova/SukiSU-Nova/main/kernel/setup.sh" | bash -s $BRANCH
               ;;
           esac
 
