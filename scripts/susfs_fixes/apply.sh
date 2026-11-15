@@ -220,27 +220,65 @@ fi
 
 patch -p1 < "$SUSFS_PATCH" || true
 
-# 为尚未提供 SU 会话 FD 接口的 SukiSU/BakaSU 恢复旧版 exec hook 行为
+# SukiSU 自 2026-10 起把 exec hook 迁到 syscall hook，fs/exec.c 里不再提供
+# ksu_handle_post_execveat_sucompat 和 is_su_session 这些旧接口。
+# 遇到这种情况，把 SUSFS 主补丁注入 fs/exec.c 的整段 KSU exec hook 代码清理掉，
+# 只保留 #include <linux/susfs_def.h>，避免编译和链接失败。
 EXEC_HELPER=""
 if [[ "$KSU_VARIANT" == SukiSU* || "$KSU_VARIANT" == "BakaSU" ]]; then
-  if grep -qF 'ksu_install_su_fd();' fs/exec.c; then
-    EXEC_HELPER="ksu_install_su_fd"
-  elif grep -qF 'ksu_handle_post_execveat_sucompat(' fs/exec.c; then
+  if grep -qF 'ksu_handle_post_execveat_sucompat(' fs/exec.c; then
     EXEC_HELPER="ksu_handle_post_execveat_sucompat"
+  elif grep -qF 'ksu_install_su_fd();' fs/exec.c; then
+    EXEC_HELPER="ksu_install_su_fd"
   fi
 fi
 if [[ -n "$EXEC_HELPER" ]] \
-  && ! grep -RqsE --include='*.c' "^[[:space:]]*int[[:space:]]+${EXEC_HELPER}[[:space:]]*\(" "$KERNEL_ROOT/KernelSU/kernel"; then
-  echo "$KSU_VARIANT 尚未提供 $EXEC_HELPER，恢复旧版 exec hook"
-  sed -i '/^extern int ksu_install_su_fd(void);$/d' fs/exec.c
-  sed -i '/^extern int ksu_handle_post_execveat_sucompat(/,+1d' fs/exec.c
-  sed -i 's/is_su_session = !\(ksu_handle_execveat[^;]*;\)/\1/' fs/exec.c
-  sed -i '/^[[:space:]]*bool is_su_session = false;$/d' fs/exec.c
-  sed -i '/^[[:space:]]*if (unlikely(is_su_session && retval >= 0))$/,+1d' fs/exec.c
-  sed -i '/^[[:space:]]*if (unlikely(is_su_session))$/,+1d' fs/exec.c
-  sed -i '/^#ifdef CONFIG_KSU_SUSFS$/N;/^#ifdef CONFIG_KSU_SUSFS\n#endif \/\/ #ifdef CONFIG_KSU_SUSFS$/d' fs/exec.c
-  if grep -qE 'ksu_install_su_fd|ksu_handle_post_execveat_sucompat|is_su_session' fs/exec.c; then
-    echo "::error::$KSU_VARIANT exec hook 结构已变化，无法完成兼容修复"
+  && ! grep -Rqs 'ksu_handle_post_execveat_sucompat' "$KERNEL_ROOT/KernelSU/kernel"; then
+  echo "$KSU_VARIANT 未提供 ksu_handle_post_execveat_sucompat，清理 SUSFS 注入的 exec hook"
+  python3 - fs/exec.c <<'PY'
+import sys
+
+p = sys.argv[1]
+with open(p, 'r', encoding='utf-8', errors='replace') as f:
+    lines = f.readlines()
+
+KEY = ('ksu_su_compat_enabled', 'is_su_session',
+       'ksu_handle_post_execveat_sucompat', 'is_ksu_preinit_session')
+
+out = []
+i = 0
+n = len(lines)
+while i < n:
+    s = lines[i]
+    if s.strip() == '#ifdef CONFIG_KSU_SUSFS':
+        depth = 0
+        j = i
+        end = -1
+        while j < n:
+            st = lines[j].strip()
+            if st.startswith('#ifdef') or st.startswith('#ifndef') or st.startswith('#if '):
+                depth += 1
+            elif st.startswith('#endif'):
+                depth -= 1
+                if depth == 0:
+                    end = j
+                    break
+            j += 1
+        if end >= 0:
+            block = ''.join(lines[i:end + 1])
+            if any(k in block for k in KEY):
+                i = end + 1
+                continue
+    out.append(s)
+    i += 1
+
+with open(p, 'w', encoding='utf-8') as f:
+    f.write(''.join(out))
+PY
+  sed -i '/ksu_install_su_fd/d; /ksu_handle_post_execveat_sucompat/d; /is_su_session/d; /is_ksu_preinit_session/d' fs/exec.c
+  sed -i '/^[[:space:]]*int preinit_fd = 0;$/d' fs/exec.c
+  if grep -qE 'ksu_install_su_fd|ksu_handle_post_execveat_sucompat|is_su_session|is_ksu_preinit_session' fs/exec.c; then
+    echo "::error::$KSU_VARIANT exec hook 清理后仍有残留"
     exit 1
   fi
 fi
